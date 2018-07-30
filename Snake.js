@@ -1,24 +1,29 @@
 var snake = [];
 var squares = []
 var squareWidth = 20;
+var boardWidth = 1000, boardHeight = 600;
 var directions = {"UP":new Point(0, -1), "DOWN":new Point(0, 1), "LEFT":new Point(-1, 0), "RIGHT":new Point(1, 0)}
 var currentDirection;
 var apple;
+var isDead;
+var score, highScore, scoreText;
 function setup() {
+  createCanvas(boardWidth+300, boardHeight);
+  highScore = 0
   reset()
 }
 
 function reset()
 {
-  createCanvas(1000, 600);
-  //one time setup
-  fill(50);
+  if(score>highScore) highScore = score;
+  isDead = false;
+  score = 0;
   snake = []
-  snake.push(new Point(5, height/(squareWidth*2)));
-  snake.push(new Point(4, height/(squareWidth*2)));
+  snake.push(new Point(5, boardHeight/(squareWidth*2)));
+  snake.push(new Point(4, boardHeight/(squareWidth*2)));
   generateApple();
   currentDirection = directions.RIGHT;
-  frameRate(15)
+  frameRate(10)
 }
 
 function keyPressed() {
@@ -37,23 +42,34 @@ function draw() {
   drawApple();
   moveSnake();
   drawSnake();
+  if(isDead)
+    reset();
 }
 
 function generateApple()
 {
-  apple = new Point(parseInt(random(0, width/squareWidth)), parseInt(random(0, height/squareWidth)))
+  do
+  {
+    apple = new Point(parseInt(random(0, boardWidth/squareWidth)), parseInt(random(0, boardHeight/squareWidth)))
+  }while(isIntersecting(apple));
 }
 
 function drawBackground()
 { 
   fill(50)
-  for(var i = 0; i < width/squareWidth; i++)
+  for(var i = 0; i < boardWidth/squareWidth; i++)
   {
-    for(var j = 0; j < height/squareWidth; j++)
+    for(var j = 0; j < boardHeight/squareWidth; j++)
     {
       rect(i*squareWidth, j*squareWidth, squareWidth, squareWidth)
     }
   }
+  fill(255)
+  rect(boardWidth, 0, 300, boardHeight)
+  fill(0, 0, 255);
+  textSize(20);
+  textAlign(CENTER);
+  scoreText = text('High Score is '+highScore+'\n\n\n\nScore is '+score, boardWidth, 200, 300, boardHeight);
 }
 
 function drawApple()
@@ -67,20 +83,25 @@ function moveSnake()
   var tail = snake.slice(snake.length-1);
   tail.x = snake[0].x + currentDirection.x;
   tail.y = snake[0].y + currentDirection.y;
-  if(tail.x === apple.x && tail.y === apple.y)
+  if(tail.x >= boardWidth/squareWidth) tail.x = 0;
+  if(tail.y >= boardHeight/squareWidth) tail.y = 0;
+  if(tail.x < 0) tail.x = boardWidth/squareWidth - 1;
+  if(tail.y < 0) tail.y = boardHeight/squareWidth - 1;
+  if(isIntersecting(tail) && (!isEqual(tail, snake.slice(snake.length-1)))) isDead = true;
+  if(tail.x === apple.x && tail.y === apple.y) 
   {
+    score++;
     generateApple();
   }
-  else
-    snake.pop()
+  else snake.pop()
   snake.unshift(tail)
 }
 
-function isDead(head)
+function isIntersecting(point)
 {
   for(var i = 1; i < snake.length; i++)
   {
-    if(snake[i].x === head.x && snake[i].y === head.y)
+    if(isEqual(snake[i], point))
       return true;
   }
   return false;
@@ -94,8 +115,14 @@ function drawSnake() {
   }
 }
 
+function isEqual(a, b)
+{
+  if(a.x === b.x && a.y === b.y) return true;
+  return false;
+}
+
 function Point(pX, pY)
 {
   this.x = pX;
-  this.y = pY;
+  this.y = pY;  
 }
